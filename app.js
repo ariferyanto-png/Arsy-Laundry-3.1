@@ -1435,13 +1435,13 @@ function filterReportsData() {
     return matchStatus && matchDate && matchMethod;
   });
 
-  const tbody = document.getElementById("reportTableBody");
+    const listContainer = document.getElementById("reportListContainer") || document.getElementById("reportTableBody");
   const countSpan = document.getElementById("reportTransactionCount");
   if (countSpan) countSpan.textContent = `${filtered.length} transaksi`;
   const footerEl = document.getElementById("reportSummaryFooter");
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3"><div class="report-empty">Belum ada data transaksi</div></td></tr>`;
+    listContainer.innerHTML = `<div class="report-empty" style="text-align: center; padding: 30px; color: var(--muted); background: white; border-radius: 12px; border: 1px solid var(--border);">Belum ada data transaksi pada filter ini</div>`;
     if (footerEl) footerEl.style.display = "none";
     return;
   }
@@ -1459,24 +1459,52 @@ function filterReportsData() {
   });
 
   let unitSummaryText = Object.entries(unitTotals).map(([unit, val]) => `${val} ${unit}`).join(", ");
+  
   let rowsHTML = filtered.map(item => {
     const itemsList = getTransactionItems(item);
-    let desc = itemsList.length === 1 ? `${itemsList[0].serviceType} (${itemsList[0].weight})` : `${itemsList.length} layanan`;
-    let methodBadge = item.paymentMethod && item.paymentMethod !== "-" ? `<br><small style="color:var(--primary); font-weight:bold;">${escapeHTML(item.paymentMethod)}</small>` : "";
+    let desc = itemsList.map(it => `${it.serviceType} (${it.weight})`).join(", ");
+    let methodBadge = item.paymentMethod && item.paymentMethod !== "-" ? ` • ${escapeHTML(item.paymentMethod)}` : "";
+    
+    // Warna Badge Status Pekerjaan
+    let statusPek = item.status || "Antrian";
+    let bgPek = "#fff5df"; let colorPek = "#c78300"; // Kuning (Antrian/Proses)
+    if(statusPek.toLowerCase() === "selesai") { bgPek = "#e8f8ef"; colorPek = "#159447"; } // Hijau
+    else if(statusPek.toLowerCase().includes("siap")) { bgPek = "#e1edff"; colorPek = "#1769e0"; } // Biru Muda
+    else if(statusPek.toLowerCase() === "batal") { bgPek = "#ffebeb"; colorPek = "#df3d3d"; } // Merah
+
+    // Warna Badge Status Pembayaran
+    let statusBay = item.paymentStatus || "Belum Lunas";
+    let bgBay = "#ffebeb"; let colorBay = "#dc2626"; // Merah (Belum Lunas)
+    if(statusBay.toLowerCase() === "lunas") { bgBay = "#dcfce7"; colorBay = "#16a34a"; } // Hijau
+    else if(statusBay.toLowerCase() === "dp") { bgBay = "#fef9c3"; colorBay = "#ca8a04"; } // Kuning Terang (DP)
+
     return `
-      <tr onclick="openTransactionDetail(${item.id})" style="cursor: pointer;">
-        <td>
-          <strong style="display: block; font-size: 14px; color: var(--text);">${escapeHTML(item.customerName)}</strong>
-          <small style="color: var(--muted);">${escapeHTML(desc)}</small>
-          ${methodBadge}
-        </td>
-        <td><b>${formatRupiah(item.total)}</b></td>
-        <td><span class="report-status ${item.status.toLowerCase().replace(/\s+/g, '-')}">${item.status}</span></td>
-      </tr>
+      <div onclick="openTransactionDetail(${item.id})" style="background: white; border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <span style="font-size: 11px; font-weight: bold; color: var(--muted);">TRX/${item.id}</span>
+            <h3 style="font-size: 16px; font-weight: bold; color: var(--text); margin-top: 2px;">${escapeHTML(item.customerName)}</h3>
+          </div>
+          <div style="text-align: right;">
+            <b style="font-size: 16px; color: var(--primary);">${formatRupiah(item.total)}</b>
+          </div>
+        </div>
+        
+        <div style="background: #f8fafc; border: 1px solid #edf0f5; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px;">
+          <p style="font-size: 13px; color: var(--text); margin-bottom: 4px; font-weight: 500;">${escapeHTML(desc)}</p>
+          <span style="font-size: 11px; color: var(--muted);">${formatDate(item.date)}${methodBadge}</span>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <span style="background: ${bgPek}; color: ${colorPek}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${statusPek}</span>
+          <span style="background: ${bgBay}; color: ${colorBay}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${statusBay}</span>
+        </div>
+      </div>
     `;
   }).join("");
 
-  tbody.innerHTML = rowsHTML;
+  listContainer.innerHTML = rowsHTML;
+  
   if (footerEl) {
     footerEl.style.display = "block";
     footerEl.innerHTML = `
