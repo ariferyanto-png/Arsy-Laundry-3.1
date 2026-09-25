@@ -133,7 +133,12 @@
           <p>Ringkasan aktivitas laundry</p>
         </div>
       </div>
-
+    <!-- Tab Mode Laporan -->
+    <div id="reportTabsContainer" style="display: flex; background: white; border-bottom: 1px solid var(--border);">
+      <button id="tabPerTransaksi" class="report-tab active" onclick="switchReportTab('transaksi')" style="flex: 1; padding: 14px; background: none; border: none; border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: bold; font-size: 14px; cursor: pointer;">Per Transaksi</button>
+      <button id="tabPerTanggal" class="report-tab" onclick="switchReportTab('tanggal')" style="flex: 1; padding: 14px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); font-weight: bold; font-size: 14px; cursor: pointer;">Per Tanggal</button>
+    </div>
+      
       <div class="report-content">
         <div class="report-menu">
           <button type="button" class="report-menu-item" onclick="openReportDetail('omset', 'Laporan Omset Transaksi')">
