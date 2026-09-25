@@ -76,6 +76,29 @@ let notaSettings = getSafeData("arsyNotaSettings", {
 let currentTransactionFilter = 'Antrian';
 let activeTransactionId = null;
 let currentReportType = 'all';
+let currentReportTabMode = 'transaksi';
+
+function switchReportTab(mode) {
+  currentReportTabMode = mode;
+
+  const tabTrans = document.getElementById("tabPerTransaksi");
+  const tabTang = document.getElementById("tabPerTanggal");
+
+  if (mode === 'transaksi') {
+    tabTrans.style.borderBottom = "2px solid var(--primary)";
+    tabTrans.style.color = "var(--primary)";
+    tabTang.style.borderBottom = "2px solid transparent";
+    tabTang.style.color = "var(--muted)";
+  } else {
+    tabTang.style.borderBottom = "2px solid var(--primary)";
+    tabTang.style.color = "var(--primary)";
+    tabTrans.style.borderBottom = "2px solid transparent";
+    tabTrans.style.color = "var(--muted)";
+  }
+
+  filterReportsData();
+}
+
 let activeNewTransactionItems = [];
 let editingTransactionItemContext = null;
 async function loadFromCloud() {
@@ -1460,61 +1483,91 @@ function filterReportsData() {
 
   let unitSummaryText = Object.entries(unitTotals).map(([unit, val]) => `${val} ${unit}`).join(", ");
 
-    let rowsHTML = filtered.map(item => {
-    const itemsList = getTransactionItems(item);
-    
-    // 1. Menggabungkan berat/kuantitas layanan untuk ditaruh di pojok kanan bawah
-    let qtyArr = [];
-    itemsList.forEach(it => {
-      const srv = servicePrices[it.serviceType];
-      const unit = srv ? srv.unit : "kg";
-      qtyArr.push(`${it.weight} ${unit}`);
-    });
-    let qtyText = qtyArr.join("  ");
+      let rowsHTML = "";
 
-    // 2. Gaya Badge Status Pekerjaan (Outline / Garis Tepi) persis Randori
-    let statusPek = item.status || "Antrian";
-    let borderPek = "#f59e0b"; let textPek = "#f59e0b"; // Kuning
-    if(statusPek.toLowerCase() === "selesai") { borderPek = "#10b981"; textPek = "#10b981"; } // Hijau
-    else if(statusPek.toLowerCase().includes("siap")) { borderPek = "#0ea5e9"; textPek = "#0ea5e9"; } // Biru
-    else if(statusPek.toLowerCase() === "batal") { borderPek = "#ef4444"; textPek = "#ef4444"; } // Merah
+  if (currentReportTabMode === 'transaksi') {
+    // Mode Per Transaksi (Kartu Detail)
+    rowsHTML = filtered.map(item => {
+      const itemsList = getTransactionItems(item);
 
-    // 3. Gaya Badge Status Pembayaran (Blok Warna Penuh) persis Randori
-    let statusBay = item.paymentStatus || "Belum Lunas";
-    let bgBay = "#ef4444"; let textBay = "white"; // Merah
-    if(statusBay.toLowerCase() === "lunas") { bgBay = "#10b981"; textBay = "white"; } // Hijau
-    else if(statusBay.toLowerCase() === "dp") { bgBay = "#f59e0b"; textBay = "white"; } // Kuning
+      let qtyArr = [];
+      itemsList.forEach(it => {
+        const srv = servicePrices[it.serviceType];
+        const unit = srv ? srv.unit : "kg";
+        qtyArr.push(`${it.weight} ${unit}`);
+      });
+      let qtyText = qtyArr.join("  ");
 
-    return `
-      <div onclick="openTransactionDetail(${item.id})" style="padding: 16px 0; border-bottom: 1px solid var(--border); cursor: pointer; background: white;">
-        
-        <!-- Baris Atas: TRX dan Tanggal -->
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-          <span style="color: #0d9488; font-size: 13.5px; font-weight: 600;">TRX/${item.id}</span>
-          <span style="color: var(--muted); font-size: 12px;">${formatDate(item.date)}</span>
-        </div>
-        
-        <!-- Baris Tengah: Nama Pelanggan dan Total Harga -->
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-          <span style="font-size: 15px; color: var(--text);">${escapeHTML(item.customerName)}</span>
-          <span style="font-size: 15px; color: var(--text); font-weight: 500;">${formatRupiah(item.total)}</span>
-        </div>
-        
-        <!-- Baris Bawah: Badge Status dan Berat -->
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; gap: 6px;">
-            <span style="border: 1px solid ${borderPek}; color: ${textPek}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${statusPek}</span>
-            <span style="background: ${bgBay}; color: ${textBay}; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${statusBay}</span>
+      let statusPek = item.status || "Antrian";
+      let borderPek = "#f59e0b"; let textPek = "#f59e0b";
+      if(statusPek.toLowerCase() === "selesai") { borderPek = "#10b981"; textPek = "#10b981"; }
+      else if(statusPek.toLowerCase().includes("siap")) { borderPek = "#0ea5e9"; textPek = "#0ea5e9"; }
+      else if(statusPek.toLowerCase() === "batal") { borderPek = "#ef4444"; textPek = "#ef4444"; }
+
+      let statusBay = item.paymentStatus || "Belum Lunas";
+      let bgBay = "#ef4444"; let textBay = "white";
+      if(statusBay.toLowerCase() === "lunas") { bgBay = "#10b981"; textBay = "white"; }
+      else if(statusBay.toLowerCase() === "dp") { bgBay = "#f59e0b"; textBay = "white"; }
+
+      return `
+        <div onclick="openTransactionDetail(${item.id})" style="padding: 16px 0; border-bottom: 1px solid var(--border); cursor: pointer; background: white;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: #0d9488; font-size: 13.5px; font-weight: 600;">TRX/${item.id}</span>
+            <span style="color: var(--muted); font-size: 12px;">${formatDate(item.date)}</span>
           </div>
-          <span style="color: #0ea5e9; font-size: 12px; font-weight: bold;">${qtyText}</span>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 15px; color: var(--text);">${escapeHTML(item.customerName)}</span>
+            <span style="font-size: 15px; color: var(--text); font-weight: 500;">${formatRupiah(item.total)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 6px;">
+              <span style="border: 1px solid ${borderPek}; color: ${textPek}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${statusPek}</span>
+              <span style="background: ${bgBay}; color: ${textBay}; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${statusBay}</span>
+            </div>
+            <span style="color: #0ea5e9; font-size: 12px; font-weight: bold;">${qtyText}</span>
+          </div>
         </div>
+      `;
+    }).join("");
+  } else {
+    // Mode Per Tanggal (Ringkasan Harian)
+    let dailySummary = {};
+    filtered.forEach(item => {
+      let itemDateStr = item.date ? new Date(item.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+      if (!dailySummary[itemDateStr]) dailySummary[itemDateStr] = { total: 0, count: 0, units: {} };
 
-      </div>
-    `;
-  }).join("");
+      if (item.status !== "Batal") {
+        dailySummary[itemDateStr].total += item.total;
+        dailySummary[itemDateStr].count++;
+
+        const itemsList = getTransactionItems(item);
+        itemsList.forEach(it => {
+          const srv = servicePrices[it.serviceType];
+          const unit = srv ? srv.unit : "kg";
+          dailySummary[itemDateStr].units[unit] = (dailySummary[itemDateStr].units[unit] || 0) + Number(it.weight || 0);
+        });
+      }
+    });
+
+    rowsHTML = Object.entries(dailySummary).map(([dateStr, data]) => {
+      let unitSummaryText = Object.entries(data.units).map(([unit, val]) => `<span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 4px;">${val} ${unit}</span>`).join("");
+
+      return `
+        <div style="padding: 16px 0; border-bottom: 1px solid var(--border); background: white;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <span style="font-size: 14px; font-weight: bold; color: var(--text);">${dateStr}</span>
+            <span style="font-size: 15px; color: var(--text); font-weight: 500;">${formatRupiah(data.total)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>${unitSummaryText}</div>
+            <span style="color: var(--muted); font-size: 12px;">${data.count} Transaksi</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
 
   listContainer.innerHTML = rowsHTML;
-  
   
   
   if (footerEl) {
