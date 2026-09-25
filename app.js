@@ -1435,7 +1435,7 @@ function filterReportsData() {
     return matchStatus && matchDate && matchMethod;
   });
 
-    const listContainer = document.getElementById("reportListContainer") || document.getElementById("reportTableBody");
+      const listContainer = document.getElementById("reportListContainer") || document.getElementById("reportTableBody");
   const countSpan = document.getElementById("reportTransactionCount");
   if (countSpan) countSpan.textContent = `${filtered.length} transaksi`;
   const footerEl = document.getElementById("reportSummaryFooter");
@@ -1459,24 +1459,22 @@ function filterReportsData() {
   });
 
   let unitSummaryText = Object.entries(unitTotals).map(([unit, val]) => `${val} ${unit}`).join(", ");
-  
+
   let rowsHTML = filtered.map(item => {
     const itemsList = getTransactionItems(item);
     let desc = itemsList.map(it => `${it.serviceType} (${it.weight})`).join(", ");
     let methodBadge = item.paymentMethod && item.paymentMethod !== "-" ? ` • ${escapeHTML(item.paymentMethod)}` : "";
-    
-    // Warna Badge Status Pekerjaan
-    let statusPek = item.status || "Antrian";
-    let bgPek = "#fff5df"; let colorPek = "#c78300"; // Kuning (Antrian/Proses)
-    if(statusPek.toLowerCase() === "selesai") { bgPek = "#e8f8ef"; colorPek = "#159447"; } // Hijau
-    else if(statusPek.toLowerCase().includes("siap")) { bgPek = "#e1edff"; colorPek = "#1769e0"; } // Biru Muda
-    else if(statusPek.toLowerCase() === "batal") { bgPek = "#ffebeb"; colorPek = "#df3d3d"; } // Merah
 
-    // Warna Badge Status Pembayaran
+    let statusPek = item.status || "Antrian";
+    let bgPek = "#fff5df"; let colorPek = "#c78300"; 
+    if(statusPek.toLowerCase() === "selesai") { bgPek = "#e8f8ef"; colorPek = "#159447"; } 
+    else if(statusPek.toLowerCase().includes("siap")) { bgPek = "#e1edff"; colorPek = "#1769e0"; } 
+    else if(statusPek.toLowerCase() === "batal") { bgPek = "#ffebeb"; colorPek = "#df3d3d"; } 
+
     let statusBay = item.paymentStatus || "Belum Lunas";
-    let bgBay = "#ffebeb"; let colorBay = "#dc2626"; // Merah (Belum Lunas)
-    if(statusBay.toLowerCase() === "lunas") { bgBay = "#dcfce7"; colorBay = "#16a34a"; } // Hijau
-    else if(statusBay.toLowerCase() === "dp") { bgBay = "#fef9c3"; colorBay = "#ca8a04"; } // Kuning Terang (DP)
+    let bgBay = "#ffebeb"; let colorBay = "#dc2626"; 
+    if(statusBay.toLowerCase() === "lunas") { bgBay = "#dcfce7"; colorBay = "#16a34a"; } 
+    else if(statusBay.toLowerCase() === "dp") { bgBay = "#fef9c3"; colorBay = "#ca8a04"; } 
 
     return `
       <div onclick="openTransactionDetail(${item.id})" style="background: white; border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
@@ -1489,7 +1487,7 @@ function filterReportsData() {
             <b style="font-size: 16px; color: var(--primary);">${formatRupiah(item.total)}</b>
           </div>
         </div>
-        
+
         <div style="background: #f8fafc; border: 1px solid #edf0f5; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px;">
           <p style="font-size: 13px; color: var(--text); margin-bottom: 4px; font-weight: 500;">${escapeHTML(desc)}</p>
           <span style="font-size: 11px; color: var(--muted);">${formatDate(item.date)}${methodBadge}</span>
@@ -1504,6 +1502,7 @@ function filterReportsData() {
   }).join("");
 
   listContainer.innerHTML = rowsHTML;
+  
   
   if (footerEl) {
     footerEl.style.display = "block";
