@@ -1460,48 +1460,61 @@ function filterReportsData() {
 
   let unitSummaryText = Object.entries(unitTotals).map(([unit, val]) => `${val} ${unit}`).join(", ");
 
-  let rowsHTML = filtered.map(item => {
+    let rowsHTML = filtered.map(item => {
     const itemsList = getTransactionItems(item);
-    let desc = itemsList.map(it => `${it.serviceType} (${it.weight})`).join(", ");
-    let methodBadge = item.paymentMethod && item.paymentMethod !== "-" ? ` • ${escapeHTML(item.paymentMethod)}` : "";
+    
+    // 1. Menggabungkan berat/kuantitas layanan untuk ditaruh di pojok kanan bawah
+    let qtyArr = [];
+    itemsList.forEach(it => {
+      const srv = servicePrices[it.serviceType];
+      const unit = srv ? srv.unit : "kg";
+      qtyArr.push(`${it.weight} ${unit}`);
+    });
+    let qtyText = qtyArr.join("  ");
 
+    // 2. Gaya Badge Status Pekerjaan (Outline / Garis Tepi) persis Randori
     let statusPek = item.status || "Antrian";
-    let bgPek = "#fff5df"; let colorPek = "#c78300"; 
-    if(statusPek.toLowerCase() === "selesai") { bgPek = "#e8f8ef"; colorPek = "#159447"; } 
-    else if(statusPek.toLowerCase().includes("siap")) { bgPek = "#e1edff"; colorPek = "#1769e0"; } 
-    else if(statusPek.toLowerCase() === "batal") { bgPek = "#ffebeb"; colorPek = "#df3d3d"; } 
+    let borderPek = "#f59e0b"; let textPek = "#f59e0b"; // Kuning
+    if(statusPek.toLowerCase() === "selesai") { borderPek = "#10b981"; textPek = "#10b981"; } // Hijau
+    else if(statusPek.toLowerCase().includes("siap")) { borderPek = "#0ea5e9"; textPek = "#0ea5e9"; } // Biru
+    else if(statusPek.toLowerCase() === "batal") { borderPek = "#ef4444"; textPek = "#ef4444"; } // Merah
 
+    // 3. Gaya Badge Status Pembayaran (Blok Warna Penuh) persis Randori
     let statusBay = item.paymentStatus || "Belum Lunas";
-    let bgBay = "#ffebeb"; let colorBay = "#dc2626"; 
-    if(statusBay.toLowerCase() === "lunas") { bgBay = "#dcfce7"; colorBay = "#16a34a"; } 
-    else if(statusBay.toLowerCase() === "dp") { bgBay = "#fef9c3"; colorBay = "#ca8a04"; } 
+    let bgBay = "#ef4444"; let textBay = "white"; // Merah
+    if(statusBay.toLowerCase() === "lunas") { bgBay = "#10b981"; textBay = "white"; } // Hijau
+    else if(statusBay.toLowerCase() === "dp") { bgBay = "#f59e0b"; textBay = "white"; } // Kuning
 
     return `
-      <div onclick="openTransactionDetail(${item.id})" style="background: white; border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-          <div>
-            <span style="font-size: 11px; font-weight: bold; color: var(--muted);">TRX/${item.id}</span>
-            <h3 style="font-size: 16px; font-weight: bold; color: var(--text); margin-top: 2px;">${escapeHTML(item.customerName)}</h3>
+      <div onclick="openTransactionDetail(${item.id})" style="padding: 16px 0; border-bottom: 1px solid var(--border); cursor: pointer; background: white;">
+        
+        <!-- Baris Atas: TRX dan Tanggal -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #0d9488; font-size: 13.5px; font-weight: 600;">TRX/${item.id}</span>
+          <span style="color: var(--muted); font-size: 12px;">${formatDate(item.date)}</span>
+        </div>
+        
+        <!-- Baris Tengah: Nama Pelanggan dan Total Harga -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+          <span style="font-size: 15px; color: var(--text);">${escapeHTML(item.customerName)}</span>
+          <span style="font-size: 15px; color: var(--text); font-weight: 500;">${formatRupiah(item.total)}</span>
+        </div>
+        
+        <!-- Baris Bawah: Badge Status dan Berat -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 6px;">
+            <span style="border: 1px solid ${borderPek}; color: ${textPek}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${statusPek}</span>
+            <span style="background: ${bgBay}; color: ${textBay}; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${statusBay}</span>
           </div>
-          <div style="text-align: right;">
-            <b style="font-size: 16px; color: var(--primary);">${formatRupiah(item.total)}</b>
-          </div>
+          <span style="color: #0ea5e9; font-size: 12px; font-weight: bold;">${qtyText}</span>
         </div>
 
-        <div style="background: #f8fafc; border: 1px solid #edf0f5; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px;">
-          <p style="font-size: 13px; color: var(--text); margin-bottom: 4px; font-weight: 500;">${escapeHTML(desc)}</p>
-          <span style="font-size: 11px; color: var(--muted);">${formatDate(item.date)}${methodBadge}</span>
-        </div>
-
-        <div style="display: flex; gap: 8px;">
-          <span style="background: ${bgPek}; color: ${colorPek}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${statusPek}</span>
-          <span style="background: ${bgBay}; color: ${colorBay}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${statusBay}</span>
-        </div>
       </div>
     `;
   }).join("");
 
   listContainer.innerHTML = rowsHTML;
+  
   
   
   if (footerEl) {
