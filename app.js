@@ -143,8 +143,15 @@ async function loadFromCloud() {
 async function saveData() {
   transactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
   
-  // MIGRATION PATCH: Paksa semua data lawas memiliki 'items' permanen
+  // SANITASI DATA TOTAL: Mencegah Google Sheets Error/Crash karena data lawas yang kosong
   transactions.forEach(t => {
+    t.id = t.id || Date.now();
+    t.date = t.date || new Date().toISOString();
+    t.customerName = t.customerName || "-";
+    t.total = t.total || 0;
+    t.status = t.status || "Antrian";
+    t.paymentStatus = t.paymentStatus || "Belum Lunas";
+    
     if (!t.items || t.items.length === 0) {
       t.items = [{
         serviceType: t.serviceType || "Cuci Kering",
@@ -155,26 +162,28 @@ async function saveData() {
   });
 
   safeStorage.setItem("arsyTransactions", JSON.stringify(transactions));
+  
   const payload = {
     action: "saveAll",
     transactions: transactions,
-    customers: savedCustomers,
-    services: servicePrices,
-    outlet: arsyOutlet,
-    notaSettings: notaSettings
+    customers: savedCustomers || [],
+    services: servicePrices || {},
+    outlet: arsyOutlet || {},
+    notaSettings: notaSettings || {}
   };
 
   try {
     await fetch(WEB_APP_URL, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "data=" + encodeURIComponent(JSON.stringify(payload))
     });
   } catch (err) {
     console.log("Sinkronisasi cloud tertunda.");
   }
 }
+
 
 document.addEventListener("DOMContentLoaded", function () {
   injectLoginModal();
