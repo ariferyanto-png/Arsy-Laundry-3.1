@@ -722,24 +722,9 @@ function setupForm() {
 
       transactions.unshift(transaction);
       transactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
+      
+      // HANYA MENGGUNAKAN SAVEDATA() SEKARANG
       saveData();
-              // Kirim 1 transaksi ke Google Sheet
-        fetch(WEB_APP_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify(transaction) 
-        })
-        .then(response => response.json())
-        .then(result => {
-          if (result.status === "success") {
-            console.log("Transaksi sukses masuk ke Excel!");
-          }
-        })
-        .catch(error => {
-          console.log("Gagal kirim:", error);
-        });
       
       form.reset();
       activeNewTransactionItems = [];
@@ -768,6 +753,7 @@ function setupForm() {
     });
   }
 }
+
 
 function renderAll() {
   updateDashboard();
