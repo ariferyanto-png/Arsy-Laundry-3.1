@@ -1600,7 +1600,7 @@ function showPage(pageId) {
   
   if (pageId === 'transactionsPage') {
     const searchInput = document.getElementById("transactionSearchInput");
-    if (searchInput) searchInput.value = "";
+    //if (searchInput) searchInput.value = "";
     renderAllTransactions();
   }
   
