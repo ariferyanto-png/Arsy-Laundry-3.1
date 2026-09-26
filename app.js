@@ -2450,3 +2450,75 @@ function restoreDatabaseLengkap(event) {
   event.target.value = ''; 
 }
 
+// ==========================================
+// FITUR GESTURE KEMBALI (ANTI CLOSE CHROME)
+// ==========================================
+
+// 1. Rekam halaman saat pertama kali dibuka
+window.addEventListener("load", function() {
+  history.replaceState({ type: 'page', id: 'dashboardPage' }, "", "#dashboardPage");
+});
+
+// 2. Cegat fungsi pindah halaman (showPage) untuk merekam jejak otomatis
+const fungsiShowPageAsli = showPage;
+showPage = function(pageId, isBack = false) {
+  fungsiShowPageAsli(pageId); 
+  if (!isBack) {
+    history.pushState({ type: 'page', id: pageId }, "", "#" + pageId);
+  }
+};
+
+// 3. Pantau Jendela Pop-up (Modal) Otomatis
+let lagiGeserKembali = false; 
+
+const pemantauModal = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.attributeName === "class") {
+      const target = mutation.target;
+      if (target.classList.contains("modal")) {
+        const tadinyaBuka = mutation.oldValue && mutation.oldValue.includes("show");
+        const sekarangBuka = target.classList.contains("show");
+        
+        if (sekarangBuka && !tadinyaBuka) {
+          // Kalau Pop-up kebuka, catat selangkah di history HP
+          if(!lagiGeserKembali) {
+            history.pushState({ type: 'modal', id: target.id }, "", "#" + target.id);
+          }
+        } else if (!sekarangBuka && tadinyaBuka) {
+          // Kalau Pop-up ditutup manual (klik X), hapus jejaknya
+          if (!lagiGeserKembali && history.state && history.state.type === 'modal' && history.state.id === target.id) {
+            history.back();
+          }
+        }
+      }
+    }
+  });
+});
+
+// Pasang sensor pemantau ke semua elemen pop-up (modal)
+document.querySelectorAll('.modal').forEach(modal => {
+  pemantauModal.observe(modal, { attributes: true, attributeOldValue: true, attributeFilter: ["class"] });
+});
+
+// 4. Tangani saat layar HP digeser untuk KEMBALI (Gesture Back)
+window.addEventListener("popstate", function(event) {
+  lagiGeserKembali = true; 
+  
+  // Cek apakah ada pop-up/modal yang sedang terbuka
+  const modalTerbuka = Array.from(document.querySelectorAll(".modal.show"));
+  
+  if (modalTerbuka.length > 0) {
+    // Kalau ada pop-up terbuka, cukup tutup pop-up yang paling atas, JANGAN pindah halaman
+    modalTerbuka[modalTerbuka.length - 1].classList.remove("show");
+  } 
+  else {
+    // Kalau layar sudah bersih dari pop-up, baru mundur halamannya
+    if (event.state && event.state.type === 'page') {
+      showPage(event.state.id, true);
+    } else {
+      showPage('dashboardPage', true); // Mentok balik ke Dashboard
+    }
+  }
+  
+  setTimeout(() => { lagiGeserKembali = false; }, 100);
+});
