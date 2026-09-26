@@ -141,10 +141,22 @@ async function loadFromCloud() {
 }
 
 async function saveData() {
-  transactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
-  
-  // SANITASI DATA TOTAL: Mencegah Google Sheets Error/Crash karena data lawas yang kosong
-  transactions.forEach(t => {
+  // 1. Pastikan transactions adalah array murni
+  let txArray = [];
+  if (Array.isArray(transactions)) {
+    txArray = transactions;
+  } else if (transactions instanceof Map) {
+    txArray = Array.from(transactions.values());
+  } else {
+    // Jika format lain, coba kembalikan ke array dari lokal storage
+    const stored = safeStorage.getItem("arsyTransactions");
+    if (stored) {
+      try { txArray = JSON.parse(stored); } catch (e) {}
+    }
+  }
+
+  // 2. MIGRATION PATCH & SANITASI DATA
+  txArray.forEach(t => {
     t.id = t.id || Date.now();
     t.date = t.date || new Date().toISOString();
     t.customerName = t.customerName || "-";
@@ -152,7 +164,8 @@ async function saveData() {
     t.status = t.status || "Antrian";
     t.paymentStatus = t.paymentStatus || "Belum Lunas";
     
-    if (!t.items || t.items.length === 0) {
+    // Pastikan selalu ada array items
+    if (!t.items || !Array.isArray(t.items) || t.items.length === 0) {
       t.items = [{
         serviceType: t.serviceType || "Cuci Kering",
         weight: t.weight || 1,
@@ -161,28 +174,33 @@ async function saveData() {
     }
   });
 
+  // Simpan kembali ke lokal dan update variabel global
+  transactions = txArray;
   safeStorage.setItem("arsyTransactions", JSON.stringify(transactions));
   
+  // 3. Siapkan Payload yang sesuai dengan format Code.gs
   const payload = {
     action: "saveAll",
-    transactions: transactions,
+    transactions: txArray,
     customers: savedCustomers || [],
     services: servicePrices || {},
     outlet: arsyOutlet || {},
     notaSettings: notaSettings || {}
   };
 
+  // 4. Kirim dengan format yang benar (JSON murni)
   try {
     await fetch(WEB_APP_URL, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "data=" + encodeURIComponent(JSON.stringify(payload))
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
     });
   } catch (err) {
     console.log("Sinkronisasi cloud tertunda.");
   }
 }
+
 
 
 document.addEventListener("DOMContentLoaded", function () {
