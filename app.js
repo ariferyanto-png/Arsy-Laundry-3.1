@@ -740,11 +740,17 @@ function setupForm() {
         paymentDate: null
       };
 
+      // 1. KIRIM LANGSUNG KE GOOGLE SHEETS
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(transaction) 
+      }).catch(err => console.log(err));
+
+      // 2. SIMPAN KE MEMORI HP
       transactions.unshift(transaction);
       transactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
-      
-      // HANYA MENGGUNAKAN SAVEDATA() SEKARANG
-      saveData();
+      safeStorage.setItem("arsyTransactions", JSON.stringify(transactions));
       
       form.reset();
       activeNewTransactionItems = [];
@@ -754,6 +760,27 @@ function setupForm() {
       showToast("Transaksi berhasil disimpan");
     });
   }
+
+  const cancelForm = document.getElementById("cancelForm");
+  if (cancelForm) {
+    cancelForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const reason = document.getElementById("cancelReason").value.trim();
+      const item = transactions.find(t => t.id === activeTransactionId);
+      if (item) {
+        item.status = "Batal";
+        item.cancelReason = reason;
+        safeStorage.setItem("arsyTransactions", JSON.stringify(transactions));
+        renderAll();
+        closeCancelModal();
+        openTransactionDetail(activeTransactionId);
+        showToast("Transaksi berhasil dibatalkan");
+      }
+    });
+  }
+}
+
+
 
   const cancelForm = document.getElementById("cancelForm");
   if (cancelForm) {
