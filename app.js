@@ -142,6 +142,18 @@ async function loadFromCloud() {
 
 async function saveData() {
   transactions = Array.from(new Map(transactions.map(t => [t.id, t])).values());
+  
+  // MIGRATION PATCH: Paksa semua data lawas memiliki 'items' permanen
+  transactions.forEach(t => {
+    if (!t.items || t.items.length === 0) {
+      t.items = [{
+        serviceType: t.serviceType || "Cuci Kering",
+        weight: t.weight || 1,
+        total: t.total || 0
+      }];
+    }
+  });
+
   safeStorage.setItem("arsyTransactions", JSON.stringify(transactions));
   const payload = {
     action: "saveAll",
@@ -157,12 +169,13 @@ async function saveData() {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-body: JSON.stringify(payload)
+      body: JSON.stringify(payload)
     });
   } catch (err) {
     console.log("Sinkronisasi cloud tertunda.");
   }
 }
+
 document.addEventListener("DOMContentLoaded", function () {
   injectLoginModal();
   injectCustomerModules();
